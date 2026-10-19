@@ -1,0 +1,14 @@
+{
+  "name": "asakorte",
+  "version": "1.0.0",
+  "description": "AsaKorte: find and book pickleball courts in Mindanao. Dependency-free PWA.",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "check": "node tools/check-data.js",
+    "icons": "node tools/make-icons.js",
+    "serve": "python -m http.server 8080",
+    "prepublish-check": "npm test && npm run check"
+  },
+  "license": "UNLICENSED"
+}
