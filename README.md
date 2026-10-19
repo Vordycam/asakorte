@@ -2,6 +2,8 @@
 
 *Asa ang korte?* ("Where is the court?") is a mobile-first web app that helps pickleball players in Mindanao find a court near them, see whether it is open right now, check rates and open-play schedules, and book through the venue's own channel: Messenger, Viber, a phone call, or their booking site.
 
+**Live:** https://vordycam.github.io/asakorte/ (open it on your phone, then *Install* or *Add to Home Screen*).
+
 No accounts, no app store, no server. It is a Progressive Web App: open the link, tap *Install*, and it lives on the home screen and works offline.
 
 ## What is in the box
@@ -66,11 +68,13 @@ Covers distance maths, opening hours (including past-midnight and Manila-time ev
 
 ## Deploy
 
-Any static host. Suggested: GitHub Pages, Netlify or Cloudflare Pages (all free, all HTTPS, which the install prompt requires).
+The app is published with GitHub Pages from the `main` branch root of https://github.com/Vordycam/asakorte. Every push to `main` goes live at https://vordycam.github.io/asakorte/ within a minute or two.
 
-1. Push the folder to a repository.
-2. Point the host at the folder root.
-3. Bump `CACHE` in `sw.js` on every release so installed phones pick up the update.
+Release checklist:
+
+1. `npm test && npm run check`
+2. Bump `CACHE` in `sw.js` so installed phones pick up the update.
+3. Commit and push to `main`.
 
 ## Maps and tiles
 
