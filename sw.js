@@ -4,8 +4,10 @@
    - Map tiles: network only. The OpenStreetMap tile policy forbids bulk or
      pre-emptive caching; the browser's own HTTP cache handles repeats.
    Bump CACHE whenever js/, styles.css or index.html changes. */
-var CACHE = 'asakorte-v2';
+var CACHE = 'asakorte-v3';
 var ASSETS = [
+  './js/core/availability.js',
+  './js/availability.js',
   './vendor/leaflet/leaflet.js',
   './vendor/leaflet/leaflet.css',
   './vendor/leaflet/images/layers.png',

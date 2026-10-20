@@ -300,6 +300,18 @@ main { max-width: 820px; margin: 0 auto; padding: 0 0 calc(var(--tabbar-h) + env
 :root[data-theme="dark"] .pill.soon { color: var(--amber); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pill.soon { color: var(--amber); } }
 .pill.unknown { background: var(--surface-2); color: var(--muted); }
+.pill.free { background: var(--lime); color: var(--lime-ink); }
+.pill.free .dot { animation: pulse 1.8s ease-in-out infinite; }
+.pill.full { background: var(--closed-soft); color: var(--closed); }
+.avail { border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; background: var(--surface); border: 1px solid var(--line); }
+.avail.free { background: var(--lime); color: var(--lime-ink); border-color: var(--lime-deep); }
+.avail.full { background: var(--closed-soft); border-color: var(--line); }
+.avail.none { border-style: dashed; }
+.avail b { display: block; font-family: var(--font-display); font-size: 1.05rem; font-weight: 800; }
+.avail span { display: block; font-size: .8rem; color: var(--muted); margin-top: 2px; }
+.avail.free span { color: var(--lime-ink); opacity: .8; }
+.avail-link { display: inline-block; margin-top: 6px; font-size: .8rem; font-weight: 700; }
+.avail.free .avail-link { color: var(--lime-ink); }
 .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .pill.open .dot { animation: pulse 1.8s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }

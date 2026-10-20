@@ -295,6 +295,21 @@ test('active filter count and city counts', () => {
   ]);
 });
 
+test('venue-reported availability filters and boosts, and is inert without data', () => {
+  const avail = { b: { free: 1, kind: 'free' }, d: { free: 0, kind: 'full' } };
+  const rows = Filters.apply(COURTS, {}, { now: TUE_EVENING, availability: avail });
+  assert.equal(rows[0].court.id, 'c', 'featured still first');
+  assert.equal(rows[1].court.id, 'b', 'free courts beat merely open');
+  assert.equal(rows[1].avail.free, 1);
+  assert.equal(rows[3].avail.kind, 'full');
+  assert.deepEqual(Filters.apply(COURTS, { freeNow: true }, { now: TUE_EVENING, availability: avail }).map(r => r.court.id), ['b']);
+  assert.deepEqual(Filters.apply(COURTS, { freeNow: true }, { now: TUE_EVENING }), [], 'no data, no matches');
+  const plain = Filters.apply(COURTS, {}, { now: TUE_EVENING });
+  assert.deepEqual(plain.map(r => r.court.id), ['c', 'a', 'b', 'd'], 'without data the order is unchanged');
+  assert.equal(plain[0].avail, null);
+  assert.equal(Filters.activeCount({ freeNow: true }), 1);
+});
+
 test('nearest city respects a max radius', () => {
   const cities = [{ name: 'Davao City', lat: 7.19, lng: 125.45 }, { name: 'Cagayan de Oro', lat: 8.45, lng: 124.63 }];
   assert.equal(Filters.nearestCity(cities, DAVAO, 60).name, 'Davao City');

@@ -22,6 +22,7 @@
       bookable: false,      /* has at least one booking channel */
       free: false,
       openPlay: false,      /* has an open-play session today */
+      freeNow: false,       /* venue reported courts free right now */
       maxPrice: null,       /* PHP per hour */
       minCourts: 0,
       amenities: [],
@@ -136,7 +137,9 @@
       price: effectivePrice(court),
       priceText: priceLabel(court),
       bookable: isBookable(court),
-      favorite: !!(ctx.favorites && (ctx.favorites.has ? ctx.favorites.has(court.id) : ctx.favorites.indexOf(court.id) >= 0))
+      favorite: !!(ctx.favorites && (ctx.favorites.has ? ctx.favorites.has(court.id) : ctx.favorites.indexOf(court.id) >= 0)),
+      /* live venue-reported availability, or null when none */
+      avail: ctx.availability && ctx.availability[court.id] ? ctx.availability[court.id] : null
     };
   }
 
@@ -151,6 +154,7 @@
     if (state.bookable && !row.bookable) return false;
     if (state.free && row.price !== 0) return false;
     if (state.openPlay && !row.openPlayToday.length) return false;
+    if (state.freeNow && !(row.avail && row.avail.free > 0)) return false;
     if (isFinite(state.maxPrice) && state.maxPrice != null && row.price > state.maxPrice) return false;
     if (state.minCourts && (c.courts || 0) < state.minCourts) return false;
     if (state.favoritesOnly && !row.favorite) return false;
@@ -179,6 +183,9 @@
         return function (a, b) {
           var fa = a.court.featured ? 1 : 0, fb = b.court.featured ? 1 : 0;
           if (fa !== fb) return fb - fa;
+          /* a venue that just said "courts free" is the most actionable result */
+          var va = a.avail && a.avail.free > 0 ? 1 : 0, vb = b.avail && b.avail.free > 0 ? 1 : 0;
+          if (va !== vb) return vb - va;
           var oa = a.status.open ? 1 : 0, ob = b.status.open ? 1 : 0;
           if (oa !== ob) return ob - oa;
           if (hasPos) {
@@ -206,7 +213,7 @@
   function activeCount(state) {
     var d = defaultState(), n = 0;
     state = Object.assign(defaultState(), state || {});
-    ['openNow', 'lights', 'bookable', 'free', 'openPlay', 'favoritesOnly'].forEach(function (k) { if (state[k] !== d[k]) n++; });
+    ['openNow', 'lights', 'bookable', 'free', 'openPlay', 'freeNow', 'favoritesOnly'].forEach(function (k) { if (state[k] !== d[k]) n++; });
     if (state.setting !== 'any') n++;
     if (state.maxPrice != null && isFinite(state.maxPrice)) n++;
     if (state.minCourts) n++;

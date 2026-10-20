@@ -18,6 +18,8 @@ No accounts, no app store, no server. It is a Progressive Web App: open the link
 
 Every court detail sheet has: status pill ("Open · closes 10 PM"), booking buttons in the venue's preferred order, a **booking-message writer** (date, time, hours, players → copy → paste in Messenger), off-peak and peak rates, hours table with today highlighted, open play, amenities, payments accepted, directions (Google Maps and Waze), share link, and a "last verified" line with *Suggest an edit*.
 
+**Live availability (venue-reported).** Venues report "courts free right now" through a Google Form; the app reads the responses sheet and shows *3 of 8 courts free · 12 min ago* on the card and sheet, adds a *Courts free now* filter, and expires reports on its own. Off until configured; setup takes ten minutes: see [docs/availability-setup.md](docs/availability-setup.md).
+
 ## Run it
 
 It is plain HTML, CSS and JavaScript. Any static file server works:

@@ -11,8 +11,24 @@
     ownerEmail: '',                 /* e.g. 'hello@asakorte.ph' */
     ownerMessenger: '',             /* e.g. 'https://m.me/asakorte' (your Facebook page) */
     ownerFacebook: '',              /* e.g. 'https://www.facebook.com/asakorte' */
-    nearCityKm: 60
+    nearCityKm: 60,
+    /* Live availability, reported by venues through a Google Form. See docs/availability-setup.md.
+       Leave csvUrl empty and the feature stays off. */
+    availability: {
+      csvUrl: '',                   /* published "Form Responses" sheet, CSV link */
+      formUrl: '',                  /* the form's /viewform link, given to venues */
+      formVenueEntry: '',           /* optional: 'entry.123456789' to preselect the court */
+      refreshMinutes: 3,
+      maxAgeHours: 6,
+      defaultValidHours: 3
+    }
   };
+  /* Optional runtime override (previews, tests): window.ASAKORTE_CONFIG = { availability: {...} } */
+  if (window.ASAKORTE_CONFIG) {
+    Object.keys(window.ASAKORTE_CONFIG).forEach(function (k) {
+      if (APP[k] && typeof APP[k] === 'object') Object.assign(APP[k], window.ASAKORTE_CONFIG[k]); else APP[k] = window.ASAKORTE_CONFIG[k];
+    });
+  }
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
@@ -87,7 +103,13 @@
   var CITY_BY_NAME = {};
   CITIES.forEach(function (c) { CITY_BY_NAME[c.name] = c; });
 
-  function ctx() { return { now: new Date(), userPos: state.userPos, favorites: Store.get('favorites') }; }
+  function ctx() {
+    var now = new Date();
+    return {
+      now: now, userPos: state.userPos, favorites: Store.get('favorites'),
+      availability: Availability.enabled() ? Availability.reports(COURTS, now) : null
+    };
+  }
   function compute() { state.rows = Filters.apply(COURTS, state.filters, ctx()); return state.rows; }
 
   /* ── Toast ── */
@@ -151,6 +173,20 @@
     if (isFinite(p.peakPerHour) && isFinite(p.perHour)) t = '₱' + p.perHour + '–' + p.peakPerHour + '/hr';
     return t;
   }
+  /* Venue-reported availability pill for cards; empty when there is no live report. */
+  function availPill(a) {
+    if (!a) return '';
+    if (a.kind === 'free') return '<span class="pill free" title="Reported by the venue ' + h(a.ago) + '"><span class="dot"></span>' + h(a.short) + ' · ' + h(a.ago) + '</span>';
+    return '<span class="pill full">' + h(a.label) + ' · ' + h(a.ago) + '</span>';
+  }
+  /* The availability block at the top of the booking section of a court sheet. */
+  function availBlock(a, c) {
+    if (!Availability.enabled()) return '';
+    var link = Availability.formLink(c);
+    var venueLink = link ? '<a href="' + h(link) + '" target="_blank" rel="noopener" class="avail-link">Venue? Update availability</a>' : '';
+    if (!a) return '<div class="avail none"><span>No availability report yet. Message the venue to ask.</span>' + venueLink + '</div>';
+    return '<div class="avail ' + h(a.kind) + '"><b>' + h(a.label) + '</b><span>Reported by the venue ' + h(a.ago) + (a.note ? ' · ' + h(a.note) : '') + '</span>' + venueLink + '</div>';
+  }
   function bookRail(c) {
     var acts = Links.bookingActions(c);
     if (!acts.length) return '';
@@ -176,7 +212,7 @@
       '<div class="card-body">' +
         '<div class="card-top"><div><div class="card-name">' + h(c.name) + '</div><div class="card-place">' + h([c.area, c.city].filter(Boolean).join(' · ')) + '</div></div>' +
           (row.distanceText ? '<span class="card-dist">' + h(row.distanceText) + '</span>' : '') + '</div>' +
-        '<div class="pill-row">' + statusPill(row.status) + attrPills(c) + '</div>' +
+        '<div class="pill-row">' + availPill(row.avail) + statusPill(row.status) + attrPills(c) + '</div>' +
         '<div class="card-meta"><span class="price">' + h(priceText(row)) + '</span>' + (acts.length ? '<span class="sep">•</span>' + bookRail(c) : '') + '</div>' +
         (op ? '<div class="card-openplay">' + I.calendar + ' Open play today ' + h(Hours.fmtTime(Hours.parseTime(op.start))) + (op.end ? ' – ' + h(Hours.fmtTime(Hours.parseTime(op.end))) : '') + (op.fee ? ' · ₱' + h(op.fee) + '/head' : '') + '</div>' : '') +
         '<div class="card-actions">' +
@@ -207,6 +243,7 @@
     var n = Filters.activeCount(f);
     var html = '';
     html += '<button class="chip lime' + (f.openNow ? ' on' : '') + '" data-q="openNow" type="button"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:currentColor"></span> Open now</button>';
+    if (Availability.enabled()) html += '<button class="chip lime' + (f.freeNow ? ' on' : '') + '" data-q="freeNow" type="button">' + I.ball + ' Courts free now</button>';
     html += '<button class="chip' + (f.openPlay ? ' on' : '') + '" data-q="openPlay" type="button">' + I.calendar + ' Open play today</button>';
     html += '<button class="chip' + (f.setting === 'indoor' ? ' on' : '') + '" data-setting="indoor" type="button">' + I.roof + ' Indoor</button>';
     html += '<button class="chip' + (f.setting === 'outdoor' ? ' on' : '') + '" data-setting="outdoor" type="button">' + I.sun + ' Outdoor</button>';
@@ -606,6 +643,7 @@
         '<button class="act' + (row.favorite ? ' on' : '') + '" data-fav="' + h(c.id) + '" data-fav-act="1" type="button">' + I.heart + (row.favorite ? 'Saved' : 'Save') + '</button>' +
       '</div>' +
       '<div class="book-block"><h3>' + (acts.length ? 'Book this court' : 'Contact') + '</h3>' +
+        availBlock(row.avail, c) +
         (b.notes && acts.length ? '<div class="note">' + h(b.notes) + '</div>' : '') +
         '<div class="book-stack">' + bookStack + '</div>' + draftHTML + '</div>' +
       '<div class="info-grid">' + tiles + '</div>' +
@@ -646,6 +684,7 @@
       '<div class="filter-group"><h4>Show only</h4><div class="toggle-list">' +
         toggle('openNow', 'Open right now', 'Based on listed hours, Manila time') +
         toggle('openPlay', 'Open play today', 'Drop-in sessions today') +
+        (Availability.enabled() ? toggle('freeNow', 'Courts free now', 'Reported by the venue within the last few hours') : '') +
         toggle('lights', 'Night play (lights)', '') +
         toggle('bookable', 'Can book or message', 'Has Messenger, Viber, phone or a booking site') +
         toggle('free', 'Free courts', 'Public and community courts') +
@@ -895,6 +934,13 @@
   /* ── Boot ── */
   function boot() {
     applyTheme(Store.get('theme'));
+    Availability.configure(APP.availability);
+    Availability.onChange(function () {
+      if (state.tab === 'explore') renderExplore();
+      else if (state.tab === 'saved') renderSaved();
+      if (state.mapInit) syncMap();
+    });
+    Availability.start();
     Store.set('visits', (Store.get('visits') || 0) + 1);
     var params = new URLSearchParams(location.search);
     var savedCity = Store.get('city');
